@@ -7,33 +7,66 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        :root { --gold: linear-gradient(180deg, #ffdf00 0%, #d4af37 100%); --bg: #0a0a0a; }
-        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; justify-content: center; }
-        #score { font-size: 50px; font-weight: 900; margin: 10px 0; background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #coin { width: 220px; height: 220px; cursor: pointer; transition: transform 0.1s; position: relative; }
-        #coin img { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
-        .footer { position: fixed; bottom: 30px; width: 90%; max-width: 400px; text-align: center; }
-        .btn-invite { width: 100%; padding: 15px; border-radius: 15px; background: #1a1a1a; color: #f3ba2f; border: 1px solid #333; font-weight: bold; font-size: 16px; margin-top: 15px; }
+        :root { --gold: linear-gradient(180deg, #ffdf00 0%, #d4af37 100%); --bg: #0a0a0a; --panel: #1a1a1a; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        
+        /* Header & Stats */
+        .header { margin-top: 20px; text-align: center; width: 100%; }
+        #score { font-size: 45px; font-weight: 900; background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(255,223,0,0.3)); }
+        .vip-badge { background: var(--gold); color: black; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; margin-top: 5px; }
+
+        /* Main Coin */
+        .coin-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        #coin { width: 250px; height: 250px; cursor: pointer; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; z-index: 2; }
+        #coin img { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 50px rgba(212, 175, 55, 0.2); }
+        
+        /* Floating Text Effect */
+        .tap-anim { position: absolute; color: gold; font-size: 24px; font-weight: bold; pointer-events: none; animation: moveUp 0.8s ease-out forwards; z-index: 10; }
+        @keyframes moveUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
+
+        /* Bottom Menu & Shop */
+        .bottom-nav { background: var(--panel); width: 100%; border-radius: 25px 25px 0 0; padding: 20px; display: flex; flex-direction: column; gap: 15px; border-top: 1px solid #333; }
+        .stats-row { display: flex; justify-content: space-between; font-size: 14px; color: #aaa; }
+        .energy-bar { height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+        #energy-fill { height: 100%; width: 100%; background: var(--gold); transition: width 0.3s; }
+        
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn { background: #252525; border: 1px solid #444; color: white; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer; }
+        .btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div id="user-name" style="font-size: 18px; font-weight: bold;">...</div>
+    <div class="header">
+        <div style="font-size: 18px; font-weight: bold;" id="user-display">Yuklanmoqda...</div>
+        <div id="vip-status" class="vip-badge">👑 VIP MEMBER</div>
         <div id="score">0</div>
+        <div id="league" style="color: #777; font-size: 12px; text-transform: uppercase;">Bronze League</div>
     </div>
 
-    <div id="coin"><img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin"></div>
+    <div class="coin-container" id="tap-area">
+        <div id="coin">
+            <img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin">
+        </div>
+    </div>
 
-    <div class="footer">
-        <button class="btn-invite" onclick="shareRef()">👥 Do'stlarni taklif qilish (+5000)</button>
+    <div class="bottom-nav">
+        <div class="stats-row">
+            <span>⚡ Energiya: <span id="energy-text">1000/1000</span></span>
+            <span>👆 Tap: +<span id="tap-power">1</span></span>
+        </div>
+        <div class="energy-bar"><div id="energy-fill"></div></div>
+        
+        <div class="actions">
+            <button class="btn" onclick="upgradeTap()">🔥 Multi-tap (5000)</button>
+            <button class="btn" onclick="claimDaily()">🎁 Kunlik Bonus</button>
+            <button class="btn" style="grid-column: span 2; color: #f3ba2f;" onclick="shareRef()">👥 Do'stlarni taklif qilish (+10,000)</button>
+        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const user = tg.initDataUnsafe?.user;
-        const userId = user?.id || "test_user";
-        const startParam = tg.initDataUnsafe?.start_param;
+        const userId = tg.initDataUnsafe?.user?.id || "test_user";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY",
@@ -47,40 +80,98 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let score = 0;
+        
+        let userDB = { s: 0, e: 1000, m: 1000, p: 1, vip: false, lastDaily: 0 };
 
-        // Ma'lumotlarni yuklash va referal bonus
-        db.ref('users/' + userId).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                score = snapshot.val().s;
-                document.getElementById('score').innerText = score.toLocaleString();
+        // Ma'lumotlarni ulash
+        db.ref('users/' + userId).on('value', (snap) => {
+            if (snap.exists()) {
+                userDB = snap.val();
+                updateUI();
             } else {
-                let initialScore = 0;
-                if (startParam && startParam.startsWith('ref')) {
-                    const refereeId = startParam.replace('ref', '');
-                    db.ref('users/' + refereeId + '/s').transaction(s => (s || 0) + 5000);
-                    initialScore = 5000;
-                }
-                db.ref('users/' + userId).set({ s: initialScore });
+                db.ref('users/' + userId).set(userDB);
             }
-            document.getElementById('user-name').innerText = user?.first_name || "O'yinchi";
         });
 
-        document.getElementById('coin').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            score++;
-            document.getElementById('score').innerText = score.toLocaleString();
-            db.ref('users/' + userId).update({ s: score });
+        function updateUI() {
+            document.getElementById('score').innerText = Math.floor(userDB.s).toLocaleString();
+            document.getElementById('user-display').innerText = tg.initDataUnsafe?.user?.first_name || "O'yinchi";
+            document.getElementById('energy-text').innerText = `${Math.floor(userDB.e)}/${userDB.m}`;
+            document.getElementById('energy-fill').style.width = (userDB.e / userDB.m * 100) + "%";
+            document.getElementById('tap-power').innerText = userDB.p;
             
-            document.getElementById('coin').style.transform = "scale(0.95)";
-            setTimeout(() => document.getElementById('coin').style.transform = "scale(1)", 100);
+            // VIP & League tizimi
+            if(userDB.s >= 100000 || userDB.vip) {
+                document.getElementById('vip-status').style.display = "inline-block";
+                document.getElementById('league').innerText = "Diamond League 💎";
+                userDB.vip = true;
+            } else if(userDB.s >= 20000) {
+                document.getElementById('league').innerText = "Gold League 🥇";
+            }
+        }
+
+        // Tapping Logic
+        document.getElementById('tap-area').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if(userDB.e >= userDB.p) {
+                userDB.s += userDB.p;
+                userDB.e -= userDB.p;
+                
+                showTapAnim(touch.clientX, touch.clientY, userDB.p);
+                updateUI();
+                db.ref('users/' + userId).update({ s: userDB.s, e: userDB.e, vip: userDB.vip });
+            }
         });
+
+        function showTapAnim(x, y, amount) {
+            const el = document.createElement('div');
+            el.className = 'tap-anim';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.innerText = '+' + amount;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+            document.getElementById('coin').style.transform = "scale(0.92)";
+            setTimeout(() => document.getElementById('coin').style.transform = "scale(1)", 50);
+        }
+
+        function upgradeTap() {
+            if(userDB.s >= 5000) {
+                userDB.s -= 5000;
+                userDB.p += 1;
+                db.ref('users/' + userId).update({ s: userDB.s, p: userDB.p });
+                tg.showAlert("Multi-tap darajasi oshdi! Endi har bir bosish +" + userDB.p);
+            } else {
+                tg.showAlert("Mablag' yetarli emas!");
+            }
+        }
+
+        function claimDaily() {
+            const now = Date.now();
+            if(now - (userDB.lastDaily || 0) > 86400000) { // 24 soat
+                userDB.s += 10000;
+                userDB.lastDaily = now;
+                db.ref('users/' + userId).update({ s: userDB.s, lastDaily: now });
+                tg.showAlert("Sizga 10,000 ball bonus berildi! 🎁");
+            } else {
+                tg.showAlert("Siz bugun bonus olgansiz. Ertaga qaytib keling!");
+            }
+        }
 
         function shareRef() {
-            const inviteLink = `https://t.me/Tapcoinsumbot?start=ref${userId}`;
-            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=Men bilan o'yna va 5000 bonus ol! 🚀`;
+            const inviteLink = `https://t.me/Tapcoinsumbot/start?startapp=ref${userId}`;
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=Muzaffar bilan o'yna va 10,000 ball bonus ol! 🚀`;
             tg.openTelegramLink(shareUrl);
         }
+
+        // Energiya tiklanishi
+        setInterval(() => {
+            if(userDB.e < userDB.m) {
+                userDB.e = Math.min(userDB.m, userDB.e + 2);
+                updateUI();
+            }
+        }, 1000);
     </script>
 </body>
 </html>
