@@ -1,184 +1,93 @@
-            <!DOCTYPE html>
+            <
+<!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <title>Tap Coin VIP</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         :root { --gold: linear-gradient(180deg, #ffdf00 0%, #d4af37 100%); --bg: #0a0a0a; }
-        body {
-            margin: 0; background: var(--bg); color: white;
-            font-family: 'Inter', sans-serif; display: flex; flex-direction: column;
-            align-items: center; height: 100vh; overflow: hidden; touch-action: none;
-        }
-
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
         .header { margin-top: 25px; text-align: center; }
-        #user-info { font-size: 18px; font-weight: bold; display: flex; align-items: center; gap: 8px; justify-content: center; }
-        
-        /* VIP va Status dizayni */
-        .vip-badge { 
-            font-size: 10px; padding: 2px 10px; border-radius: 12px; 
-            background: var(--gold); color: black; font-weight: 900; 
-            display: none; box-shadow: 0 0 10px rgba(255, 223, 0, 0.5);
-        }
-
         #score { font-size: 50px; font-weight: 900; margin: 10px 0; background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #league-text { font-size: 14px; color: #888; font-weight: bold; letter-spacing: 1px; }
-
-        .coin-area { position: relative; margin-top: 30px; }
-        #coin { width: 250px; height: 250px; transition: transform 0.05s ease; -webkit-tap-highlight-color: transparent; }
-        #coin img { width: 100%; height: 100%; }
-
-        /* Referal bo'limi */
-        .ref-section {
-            background: #1a1a1a; padding: 12px 25px; border-radius: 20px;
-            margin-top: 25px; border: 1px solid #333; cursor: pointer;
-            display: flex; align-items: center; gap: 10px; transition: 0.2s;
-        }
-        .ref-section:active { transform: scale(0.95); background: #222; }
-
+        #coin { width: 240px; height: 240px; cursor: pointer; transition: transform 0.05s; margin-top: 20px; }
+        #coin img { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 20px rgba(255, 223, 0, 0.2); }
         .footer { position: fixed; bottom: 30px; width: 90%; max-width: 400px; }
-        .energy-box { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
-        .progress-bar { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
-        #progress-fill { height: 100%; width: 100%; background: var(--gold); }
-
-        .menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .menu-item { background: #151515; border: 1px solid #333; padding: 12px; border-radius: 15px; text-align: center; }
-        
-        .tap-num { position: absolute; color: white; font-size: 32px; font-weight: 800; animation: floatUp 0.7s forwards; pointer-events: none; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-120px); } }
+        .progress-bar { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+        #progress-fill { height: 100%; width: 100%; background: var(--gold); transition: width 0.2s; }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <div id="user-info">
-            <span id="name">Yuklanmoqda...</span>
-            <span id="vip-tag" class="vip-badge">VIP</span>
-        </div>
+        <div id="user-info"><b>Salom, </b><span id="name">...</span></div>
         <div id="score">0</div>
-        <div id="league-text">BRONZE LEAGUE</div>
+        <div id="league" style="color: #888; font-size: 12px; letter-spacing: 1px;">BRONZE LEAGUE</div>
     </div>
 
-    <div class="coin-area">
-        <div id="coin">
-            <img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin">
-        </div>
-    </div>
-
-    <div class="ref-section" onclick="sendInvite()">
-        <span>👥</span>
-        <span style="font-weight: bold;">Do'stlarni taklif qilish</span>
-    </div>
+    <div id="coin"><img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin"></div>
 
     <div class="footer">
-        <div class="energy-box">
-            <span>⚡ Energiya</span>
-            <span id="energy-text">1000/1000</span>
+        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span>⚡ Energy</span> <span id="energy-text">1000/1000</span>
         </div>
         <div class="progress-bar"><div id="progress-fill"></div></div>
-        <div class="menu">
-            <div class="menu-item" onclick="upgrade('pwr')">🚀 Boost<br><small id="p-cost">100</small></div>
-            <div class="menu-item" onclick="upgrade('max')">🔋 Limit<br><small id="m-cost">200</small></div>
-            <div class="menu-item" onclick="sendInvite()">🎁 Ref<br><small>Bonus</small></div>
-        </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        const userId = tg.initDataUnsafe?.user?.id || "test_user";
 
-        let data = {
-            score: parseInt(localStorage.getItem('sc')) || 0,
-            energy: parseInt(localStorage.getItem('en')) || 1000,
-            maxEn: parseInt(localStorage.getItem('mx')) || 1000,
-            power: parseInt(localStorage.getItem('pw')) || 1,
-            userId: tg.initDataUnsafe?.user?.id || "000"
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY",
+            authDomain: "tapcoin-a6289.firebaseapp.com",
+            databaseURL: "https://tapcoin-a6289-default-rtdb.firebaseio.com",
+            projectId: "tapcoin-a6289",
+            storageBucket: "tapcoin-a6289.firebasestorage.app",
+            messagingSenderId: "151358729111",
+            appId: "1:151358729111:web:282269198f05cf9b89b2d2"
         };
 
-        function updateUI() {
-            document.getElementById('score').innerText = data.score.toLocaleString();
-            document.getElementById('energy-text').innerText = `${Math.floor(data.energy)}/${data.maxEn}`;
-            document.getElementById('progress-fill').style.width = (data.energy / data.maxEn * 100) + "%";
-            document.getElementById('p-cost').innerText = data.power * 250;
-            document.getElementById('m-cost').innerText = data.maxEn * 0.4;
-            
-            // Ism va VIP darajasini tekshirish
-            const name = tg.initDataUnsafe?.user?.first_name || "O'yinchi";
-            document.getElementById('name').innerText = name;
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let data = { s: 0, e: 1000, m: 1000, p: 1 };
 
-            // VIP va Liga shartlari
-            const league = document.getElementById('league-text');
-            const vip = document.getElementById('vip-tag');
-
-            if (data.score >= 100000) {
-                league.innerText = "DIAMOND LEAGUE 💎";
-                vip.style.display = "inline-block"; // 100k dan keyin VIP chiqadi
-            } else if (data.score >= 50000) {
-                league.innerText = "GOLD LEAGUE 🥇";
-                vip.style.display = "none";
-            } else if (data.score >= 10000) {
-                league.innerText = "SILVER LEAGUE 🥈";
-            }
-
-            save();
-        }
-
-        function save() {
-            localStorage.setItem('sc', data.score);
-            localStorage.setItem('en', data.energy);
-            localStorage.setItem('mx', data.maxEn);
-            localStorage.setItem('pw', data.power);
-        }
-
-        // Referal funksiyasi
-        function sendInvite() {
-            const botUser = "Tapcoinsumbot"; // Botingiz manzili
-            const text = encodeURIComponent("Do'stim, mana bu o'yinni o'yna va VIP darajaga ko'taril! 🚀");
-            const url = `https://t.me/${botUser}?start=user${data.userId}`;
-            window.open(`https://t.me/share/url?url=${url}&text=${text}`);
-        }
-
-        // Tap qilish
-        document.getElementById('coin').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            for(let i=0; i<e.touches.length; i++) {
-                if(data.energy >= data.power) {
-                    data.score += data.power;
-                    data.energy -= data.power;
-                    showPop(e.touches[i].clientX, e.touches[i].clientY);
+        // Ma'lumotni yuklash
+        db.ref('users/' + userId).on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const cloud = snapshot.val();
+                if(Math.abs(cloud.s - data.s) > 2) {
+                    data = cloud;
+                    updateUI();
                 }
+            } else {
+                db.ref('users/' + userId).set(data);
             }
-            document.getElementById('coin').style.transform = "scale(0.95)";
-            setTimeout(() => document.getElementById('coin').style.transform = "scale(1)", 50);
-            updateUI();
         });
 
-        function showPop(x, y) {
-            const div = document.createElement('div');
-            div.className = 'tap-num'; div.innerText = `+${data.power}`;
-            div.style.left = x + 'px'; div.style.top = y + 'px';
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 700);
+        function updateUI() {
+            document.getElementById('score').innerText = Math.floor(data.s).toLocaleString();
+            document.getElementById('name').innerText = tg.initDataUnsafe?.user?.first_name || "O'yinchi";
+            document.getElementById('energy-text').innerText = `${Math.floor(data.e)}/${data.m}`;
+            document.getElementById('progress-fill').style.width = (data.e / data.m * 100) + "%";
+            if(data.s >= 10000) document.getElementById('league').innerText = "SILVER LEAGUE 🥈";
         }
 
-        function upgrade(type) {
-            if(type === 'pwr') {
-                let cost = data.power * 250;
-                if(data.score >= cost) { data.score -= cost; data.power++; }
-            } else {
-                let cost = data.maxEn * 0.4;
-                if(data.score >= cost) { data.score -= cost; data.maxEn += 500; data.energy = data.maxEn; }
+        document.getElementById('coin').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(data.e >= data.p) {
+                data.s += data.p;
+                data.e -= data.p;
+                updateUI();
+                db.ref('users/' + userId).update({ s: data.s, e: data.e });
             }
-            updateUI();
-        }
+        });
 
         setInterval(() => {
-            if(data.energy < data.maxEn) { data.energy = Math.min(data.maxEn, data.energy + 1.8); updateUI(); }
+            if(data.e < data.m) { data.e = Math.min(data.m, data.e + 1); updateUI(); }
         }, 1000);
-
-        updateUI();
     </script>
 </body>
 </html>
