@@ -1,4 +1,3 @@
-            <
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -12,18 +11,19 @@
         body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
         .header { margin-top: 25px; text-align: center; }
         #score { font-size: 50px; font-weight: 900; margin: 10px 0; background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        #coin { width: 240px; height: 240px; cursor: pointer; transition: transform 0.05s; margin-top: 20px; }
-        #coin img { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 20px rgba(255, 223, 0, 0.2); }
+        #coin { width: 220px; height: 220px; cursor: pointer; transition: transform 0.1s; margin-top: 20px; }
+        #coin img { width: 100%; height: 100%; border-radius: 50%; }
         .footer { position: fixed; bottom: 30px; width: 90%; max-width: 400px; }
         .progress-bar { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; margin-top: 10px; }
         #progress-fill { height: 100%; width: 100%; background: var(--gold); transition: width 0.2s; }
+        .btn-invite { margin-top: 15px; width: 100%; padding: 12px; border-radius: 12px; background: #1a1a1a; color: #f3ba2f; border: 1px solid #333; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="header">
         <div id="user-info"><b>Salom, </b><span id="name">...</span></div>
         <div id="score">0</div>
-        <div id="league" style="color: #888; font-size: 12px; letter-spacing: 1px;">BRONZE LEAGUE</div>
+        <div id="league" style="color: #888; font-size: 12px;">BRONZE LEAGUE</div>
     </div>
 
     <div id="coin"><img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin"></div>
@@ -33,12 +33,18 @@
             <span>⚡ Energy</span> <span id="energy-text">1000/1000</span>
         </div>
         <div class="progress-bar"><div id="progress-fill"></div></div>
+        <button class="btn-invite" onclick="shareRef()">👥 Do'stlarni taklif qilish (+5000)</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const userId = tg.initDataUnsafe?.user?.id || "test_user";
+        const user = tg.initDataUnsafe?.user;
+        const userId = user?.id || "test_user";
+        
+        // Telegram start parametridan referal ID ni olish
+        const urlParams = new URLSearchParams(window.location.search);
+        const startParam = tg.initDataUnsafe?.start_param; // ref12345 ko'rinishida keladi
 
         const firebaseConfig = {
             apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY",
@@ -52,9 +58,8 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let data = { s: 0, e: 1000, m: 1000, p: 1 };
+        let data = { s: 0, e: 1000, m: 1000, p: 1, isNew: true };
 
-        // Ma'lumotni yuklash
         db.ref('users/' + userId).on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const cloud = snapshot.val();
@@ -63,16 +68,25 @@
                     updateUI();
                 }
             } else {
+                // YANGI FOYDALANUVCHI KIRGANDA
+                if (startParam && startParam.startsWith('ref')) {
+                    const refereeId = startParam.replace('ref', '');
+                    if (refereeId !== userId.toString()) {
+                        // Taklif qilganga bonus berish
+                        db.ref('users/' + refereeId + '/s').transaction(s => (s || 0) + 5000);
+                        // Yangi kirganga bonus berish
+                        data.s = 5000;
+                    }
+                }
                 db.ref('users/' + userId).set(data);
             }
         });
 
         function updateUI() {
             document.getElementById('score').innerText = Math.floor(data.s).toLocaleString();
-            document.getElementById('name').innerText = tg.initDataUnsafe?.user?.first_name || "O'yinchi";
+            document.getElementById('name').innerText = user?.first_name || "O'yinchi";
             document.getElementById('energy-text').innerText = `${Math.floor(data.e)}/${data.m}`;
             document.getElementById('progress-fill').style.width = (data.e / data.m * 100) + "%";
-            if(data.s >= 10000) document.getElementById('league').innerText = "SILVER LEAGUE 🥈";
         }
 
         document.getElementById('coin').addEventListener('touchstart', (e) => {
@@ -85,9 +99,9 @@
             }
         });
 
-        setInterval(() => {
-            if(data.e < data.m) { data.e = Math.min(data.m, data.e + 1); updateUI(); }
-        }, 1000);
-    </script>
-</body>
-</html>
+        function shareRef() {
+            const botUsername = "Tapcoinsumbot";
+            const inviteLink = `https://t.me/${botUsername}?start=ref${userId}`;
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=Do'stim, mana bu o'yinni o'yna va 5000 bonus ball ol! 🚀`;
+            tg.openTelegramLink(shareUrl
+                                
