@@ -6,24 +6,26 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <title>Tap Coin Gold</title>
+    <title>Tap Coin VIP Gold</title>
     <style>
         :root { --gold: #ffbf00; --bg: #0a0a0a; --card: #151515; }
-        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
         
-        /* Main UI */
+        /* Header */
         .header { margin-top: 25px; text-align: center; width: 100%; }
         #vip-level { background: rgba(255,191,0,0.15); border: 1px solid var(--gold); padding: 4px 15px; border-radius: 20px; font-size: 13px; color: var(--gold); font-weight: bold; }
         #score { font-size: 48px; font-weight: 800; margin: 10px 0; }
         
+        /* Tanga */
         .coin-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
         #coin { 
             width: 250px; height: 250px; background: radial-gradient(circle, #ffe066 0%, #ffbf00 50%, #b38600 100%); 
-            border-radius: 50%; border: 8px solid #cc9900; box-shadow: 0 0 30px rgba(255,191,0,0.2);
+            border-radius: 50%; border: 8px solid #cc9900; box-shadow: 0 0 30px rgba(255,191,0,0.25);
             display: flex; align-items: center; justify-content: center; transition: transform 0.05s;
         }
         #coin::after { content: '₿'; font-size: 130px; color: #b38600; font-weight: 900; }
 
+        /* Footer */
         .footer { width: 90%; max-width: 400px; padding-bottom: 30px; }
         .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #888; }
         .progress-bar { width: 100%; height: 8px; background: #222; border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
@@ -31,26 +33,24 @@
         .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn { background: var(--card); border: 1px solid #333; color: white; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 600; text-align: center; }
 
-        /* Referral Modal (Pasdagi oyna) */
+        /* Referral Modal */
         #ref-modal {
-            position: fixed; bottom: -100%; left: 0; width: 100%; height: 70%;
-            background: #111; border-top: 2px solid var(--gold); border-radius: 25px 25px 0 0;
-            z-index: 1000; transition: bottom 0.4s ease; padding: 20px; box-sizing: border-box;
-            overflow-y: auto;
+            position: fixed; bottom: -100%; left: 0; width: 100%; height: 75%;
+            background: #111; border-top: 3px solid var(--gold); border-radius: 25px 25px 0 0;
+            z-index: 1000; transition: bottom 0.4s ease; padding: 20px; box-sizing: border-box; overflow-y: auto;
         }
         #ref-modal.active { bottom: 0; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .ref-stat { background: var(--card); padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; border: 1px solid #222; }
-        .bonus-list { list-style: none; padding: 0; }
         .bonus-item { 
             display: flex; justify-content: space-between; background: #1a1a1a; 
             padding: 12px; margin-bottom: 8px; border-radius: 10px; font-size: 14px;
         }
         .bonus-item.done { border-left: 4px solid #4caf50; color: #4caf50; }
         
-        .tap-num { position: absolute; color: white; font-size: 32px; font-weight: 800; animation: float 0.7s forwards; pointer-events: none; }
+        .tap-num { position: absolute; color: white; font-size: 32px; font-weight: 800; animation: float 0.7s forwards; pointer-events: none; z-index: 100; }
         @keyframes float { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display:none; z-index: 999; }
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; z-index: 999; }
     </style>
 </head>
 <body>
@@ -72,31 +72,27 @@
         <div class="progress-bar"><div id="progress-fill"></div></div>
         <div class="menu">
             <div class="btn" onclick="upgrade()">🚀 Boost</div>
-            <div class="btn" style="color: var(--gold);" onclick="toggleModal(true)">👥 Referallar</div>
+            <div class="btn" style="color: var(--gold);" onclick="toggleModal(true)">👥 Do'stlar</div>
         </div>
     </div>
 
     <div class="overlay" id="overlay" onclick="toggleModal(false)"></div>
     <div id="ref-modal">
         <div class="modal-header">
-            <h2 style="margin:0; color: var(--gold);">Do'stlar Bo'limi</h2>
-            <button onclick="toggleModal(false)" style="background:none; border:none; color:white; font-size:20px;">✕</button>
+            <h2 style="margin:0; color: var(--gold);">Do'stlar & Bonuslar</h2>
+            <button onclick="toggleModal(false)" style="background:none; border:none; color:white; font-size:24px;">✕</button>
         </div>
-        
         <div class="ref-stat">
             <div style="font-size: 14px; color: #888;">Jami takliflar</div>
             <div style="font-size: 32px; font-weight: 800;"><span id="ref-count">0</span> ta</div>
         </div>
-
-        <h3 style="font-size: 16px; margin-bottom: 10px;">Maxsus Bonuslar:</h3>
         <div class="bonus-list">
-            <div class="bonus-item" id="b1"><span>5 ta do'st</span> <span>+25,000 ball</span></div>
-            <div class="bonus-item" id="b2"><span>10 ta do'st</span> <span>+50,000 ball</span></div>
-            <div class="bonus-item" id="b3"><span>50 ta do'st</span> <span>+250,000 ball</span></div>
-            <div class="bonus-item" id="b4"><span>100 ta do'st</span> <span>+500,000 ball</span></div>
-            <div class="bonus-item" id="b5"><span>200 ta do'st</span> <span>+1,000,000 ball</span></div>
+            <div class="bonus-item" id="b1"><span>5 do'st</span> <span>+25,000 ball</span></div>
+            <div class="bonus-item" id="b2"><span>10 do'st</span> <span>+50,000 ball</span></div>
+            <div class="bonus-item" id="b3"><span>50 do'st</span> <span>+250,000 ball</span></div>
+            <div class="bonus-item" id="b4"><span>100 do'st</span> <span>+500,000 ball</span></div>
+            <div class="bonus-item" id="b5"><span>200 do'st</span> <span>+1,000,000 ball</span></div>
         </div>
-
         <div class="btn" style="margin-top: 20px; background: var(--gold); color: black;" onclick="sendInvite()">Do'stni Taklif Qilish</div>
     </div>
 
@@ -124,32 +120,31 @@
             if (snap.exists()) {
                 const cloud = snap.val();
                 data = {
-                    sc: Number(cloud.sc) || 0,
-                    en: Number(cloud.en) || 1000,
-                    mx: Number(cloud.mx) || 1000,
-                    pw: Number(cloud.pw) || 1,
-                    vip: Number(cloud.vip) || 1,
-                    refs: Number(cloud.refs) || 0
+                    sc: Number(cloud.sc) || 0, en: Number(cloud.en) || 1000,
+                    mx: Number(cloud.mx) || 1000, pw: Number(cloud.pw) || 1,
+                    vip: Number(cloud.vip) || 1, refs: Number(cloud.refs) || 0
                 };
-                checkVIP();
-                updateUI();
+                checkVIP(); updateUI();
             } else {
+                // Referal ID ni 2 xil usulda qidiramiz
                 const urlParams = new URLSearchParams(window.location.search);
-                const startParam = urlParams.get('tgWebAppStartParam');
+                const startParam = urlParams.get('tgWebAppStartParam') || tg.initDataUnsafe?.start_param;
+
                 if (startParam && startParam.startsWith('ref')) {
                     const rId = startParam.replace('ref', '');
-                    db.ref('users/' + rId).transaction(u => {
-                        if(u) {
-                            u.sc = (Number(u.sc) || 0) + 10000;
-                            u.refs = (Number(u.refs) || 0) + 1;
-                            const r = u.refs;
-                            if(r === 5) u.sc += 25000;
-                            else if(r === 10) u.sc += 50000;
-                            else if(r === 50) u.sc += 250000;
-                            else if(r === 100) u.sc += 500000;
-                            else if(r === 200) u.sc += 1000000;
+                    db.ref('users/' + rId).once('value', (s) => {
+                        if(s.exists()){
+                            let u = s.val();
+                            let nSc = (Number(u.sc) || 0) + 10000;
+                            let nRf = (Number(u.refs) || 0) + 1;
+                            // Bonuslar
+                            if(nRf == 5) nSc += 25000;
+                            if(nRf == 10) nSc += 50000;
+                            if(nRf == 50) nSc += 250000;
+                            if(nRf == 100) nSc += 500000;
+                            if(nRf == 200) nSc += 1000000;
+                            db.ref('users/' + rId).update({ sc: nSc, refs: nRf });
                         }
-                        return u;
                     });
                 }
                 db.ref('users/' + userId).set(data);
@@ -162,9 +157,7 @@
             document.getElementById('ref-count').innerText = data.refs;
             document.getElementById('en-txt').innerText = `${Math.floor(data.en)}/${data.mx}`;
             document.getElementById('pwr-txt').innerText = data.pw;
-            document.getElementById('progress-fill').style.width = (data.en / data.mx * 100) + "%";
-            
-            // Bonuslarni tekshirish va rangini o'zgartirish
+            document.getElementById('progress-fill').style.width = (data.en/data.mx*100) + "%";
             const r = data.refs;
             if(r >= 5) document.getElementById('b1').classList.add('done');
             if(r >= 10) document.getElementById('b2').classList.add('done');
@@ -173,17 +166,13 @@
             if(r >= 200) document.getElementById('b5').classList.add('done');
         }
 
-        function toggleModal(show) {
-            document.getElementById('ref-modal').classList.toggle('active', show);
-            document.getElementById('overlay').style.display = show ? 'block' : 'none';
+        function toggleModal(s) {
+            document.getElementById('ref-modal').classList.toggle('active', s);
+            document.getElementById('overlay').style.display = s ? 'block' : 'none';
         }
 
         function checkVIP() {
-            const lvls = [
-                {L:10,s:500000,b:200000}, {L:9,s:400000,b:150000}, {L:8,s:300000,b:100000},
-                {L:7,s:200000,b:80000}, {L:6,s:150000,b:60000}, {L:5,s:100000,b:50000},
-                {L:4,s:75000,b:40000}, {L:3,s:50000,b:40000}, {L:2,s:10000,b:20000}
-            ];
+            const lvls = [{L:10,s:500000,b:200000},{L:9,s:400000,b:150000},{L:8,s:300000,b:100000},{L:7,s:200000,b:80000},{L:6,s:150000,b:60000},{L:5,s:100000,b:50000},{L:4,s:75000,b:40000},{L:3,s:50000,b:40000},{L:2,s:10000,b:20000}];
             for (let v of lvls) {
                 if (data.sc >= v.s && data.vip < v.L) {
                     data.sc += v.b; data.vip = v.L;
@@ -199,14 +188,13 @@
             const rect = document.getElementById('coin').getBoundingClientRect();
             const cX = rect.left + rect.width / 2;
             const cY = rect.top + rect.height / 2;
-            const r = rect.width / 2;
+            const radius = rect.width / 2;
             for (let i = 0; i < e.targetTouches.length; i++) {
                 const t = e.targetTouches[i];
-                const d = Math.sqrt(Math.pow(t.clientX - cX, 2) + Math.pow(t.clientY - cY, 2));
-                if (d <= r && data.en >= data.pw) {
+                const dist = Math.sqrt(Math.pow(t.clientX - cX, 2) + Math.pow(t.clientY - cY, 2));
+                if (dist <= radius && data.en >= data.pw) {
                     data.sc += data.pw; data.en -= data.pw;
-                    showPop(t.clientX, t.clientY);
-                    updateUI();
+                    showPop(t.clientX, t.clientY); updateUI();
                     db.ref('users/' + userId).update({ sc: data.sc, en: data.en });
                 }
             }
@@ -215,11 +203,9 @@
         });
 
         function showPop(x, y) {
-            const d = document.createElement('div');
-            d.className = 'tap-num'; d.innerText = `+${data.pw}`;
+            const d = document.createElement('div'); d.className = 'tap-num'; d.innerText = `+${data.pw}`;
             d.style.left = x + 'px'; d.style.top = y + 'px';
-            document.body.appendChild(d);
-            setTimeout(() => d.remove(), 700);
+            document.body.appendChild(d); setTimeout(() => d.remove(), 700);
         }
 
         function upgrade() {
@@ -231,8 +217,9 @@
         }
 
         function sendInvite() {
-            const url = `https://t.me/Tapcoinsumbot/start?startapp=ref${userId}`;
-            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Bonuslarni+yig'ing!`);
+            const botUser = "Tapcoinsumbot"; // Bot nomi to'g'riligini tekshiring
+            const url = `https://t.me/${botUser}/start?startapp=ref${userId}`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=Do'stlar,+Bonuslarni+10 000 oling!+🚀`);
         }
 
         setInterval(() => {
@@ -243,4 +230,5 @@
         }, 2000);
     </script>
 </body>
-</html>
+    </html>
+    
