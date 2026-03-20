@@ -1,163 +1,160 @@
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Notcoin Pro Max</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Tap Master Pro</title>
     <style>
-        :root { --main-color: #f3ba2f; --bg-color: #000; }
+        :root {
+            --gold: linear-gradient(180deg, #ffdf00 0%, #d4af37 100%);
+            --bg: #0a0a0a;
+        }
         body {
-            margin: 0; background-color: var(--bg-color); color: #fff;
-            font-family: 'Segoe UI', sans-serif; display: flex;
-            flex-direction: column; align-items: center; height: 100vh;
-            overflow: hidden; user-select: none; touch-action: manipulation;
+            margin: 0; background: var(--bg); color: white;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none; touch-action: none;
         }
 
-        #header { margin-top: 30px; text-align: center; }
-        #score { font-size: 50px; font-weight: 800; margin: 10px 0; text-shadow: 0 0 20px rgba(243, 186, 47, 0.5); }
-        .league { color: var(--main-color); font-size: 14px; letter-spacing: 2px; font-weight: bold; }
-
-        #coin-container { position: relative; margin-top: 50px; perspective: 1000px; }
-        #coin {
-            width: 240px; height: 240px; background: radial-gradient(circle, #f3ba2f 0%, #a67c00 100%);
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            font-size: 120px; cursor: pointer; border: 8px solid #ffd700;
-            box-shadow: 0 0 40px rgba(243, 186, 47, 0.4); transition: transform 0.05s;
-        }
+        .header { margin-top: 20px; text-align: center; z-index: 10; }
         
-        .wobble { animation: wobbleAnim 0.2s ease-in-out; }
-        @keyframes wobbleAnim {
-            0% { transform: scale(1) rotateX(0); }
-            50% { transform: scale(0.92) rotateX(10deg); }
-            100% { transform: scale(1) rotateX(0); }
+        /* Foydalanuvchi ismi dizayni */
+        #user-name {
+            font-size: 16px; color: #888; margin-bottom: 5px; font-weight: bold;
         }
 
-        .tap-text {
-            position: absolute; color: #fff; font-size: 35px; font-weight: bold;
-            pointer-events: none; animation: flyUp 0.8s ease-out forwards; z-index: 100;
-        }
-        @keyframes flyUp {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-150px); }
+        .league-badge {
+            background: rgba(255, 255, 255, 0.1); padding: 5px 15px;
+            border-radius: 20px; font-size: 12px; font-weight: 600;
+            color: #f3ba2f; border: 1px solid rgba(243, 186, 47, 0.3);
         }
 
-        #bottom-bar { position: fixed; bottom: 20px; width: 90%; display: flex; flex-direction: column; gap: 15px; }
-        #energy-bar { width: 100%; height: 14px; background: #333; border-radius: 10px; overflow: hidden; border: 1px solid #444; }
-        #energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #f3ba2f, #ffea00); transition: 0.2s; }
-
-        .menu { display: flex; justify-content: space-between; gap: 10px; }
-        .btn {
-            flex: 1; background: linear-gradient(145deg, #222, #111); border: 1px solid #444; color: white;
-            padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        #score {
+            font-size: 55px; font-weight: 900; margin: 10px 0;
+            background: var(--gold); -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 10px rgba(212, 175, 55, 0.5));
         }
-        .btn:active { transform: scale(0.95); background: #333; }
-        .btn span { display: block; font-size: 11px; color: var(--main-color); margin-top: 5px; }
+
+        /* Qolgan dizaynlar avvalgidek qoladi... */
+        .coin-area { position: relative; margin-top: 20px; }
+        #coin { width: 260px; height: 260px; cursor: pointer; transition: transform 0.05s; }
+        #coin img { width: 100%; height: 100%; }
+        .footer { position: fixed; bottom: 30px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .progress-container { width: 100%; height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
+        #progress-bar { height: 100%; width: 100%; background: var(--gold); }
+        .nav-menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .nav-item { background: #1a1a1a; border: 1px solid #333; border-radius: 12px; padding: 10px; text-align: center; }
+        .tap-num { position: absolute; color: white; font-size: 32px; font-weight: 800; animation: floatUp 0.7s ease-out forwards; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
     </style>
 </head>
 <body>
 
-    <div id="header">
-        <div class="league">PREMIUM LEAGUE</div>
+    <div class="header">
+        <div id="user-name">Yuklanmoqda...</div>
+        <div class="league-badge" id="league">BRONZE LEAGUE</div>
         <div id="score">0</div>
     </div>
 
-    <div id="coin-container">
-        <div id="coin">🪙</div>
+    <div class="coin-area">
+        <div id="coin">
+            <img src="https://cdn-icons-png.flaticon.com/512/5968/5968260.png" alt="coin">
+        </div>
     </div>
 
-    <div id="bottom-bar">
-        <div class="energy-box">
-            <div style="margin-bottom: 8px; font-weight: bold;">⚡ <span id="energy-num">1000/1000</span></div>
-            <div id="energy-bar"><div id="energy-fill"></div></div>
+    <div class="footer">
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+            <span>⚡ Energy</span>
+            <span id="energy-text">1000/1000</span>
         </div>
-        
-        <div class="menu">
-            <button class="btn" onclick="claimBonus()">🎁 Bonus<span id="bonus-status">Tayyor</span></button>
-            <button class="btn" onclick="upgradeTap()">🚀 Boost<span id="boost-price">100</span></button>
-            <button class="btn" onclick="showFriends()">👥 Friends<span>+5000</span></button>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item" onclick="upgradeTap()">
+                <div>🚀</div><div style="font-size: 11px;">Multitap</div><div id="multitap-cost" style="color:#f3ba2f;">100</div>
+            </div>
+            <div class="nav-item" onclick="upgradeEnergy()">
+                <div>🔋</div><div style="font-size: 11px;">Limit</div><div id="energy-cost" style="color:#f3ba2f;">200</div>
+            </div>
+            <div class="nav-item">
+                <div>👥</div><div style="font-size: 11px;">Friends</div><div style="color:#f3ba2f;">Soon</div>
+            </div>
         </div>
     </div>
 
     <script>
-        let score = parseInt(localStorage.getItem('score')) || 0;
-        let energy = parseInt(localStorage.getItem('energy')) || 1000;
-        let tapPower = parseInt(localStorage.getItem('tapPower')) || 1;
-        let maxEnergy = 1000;
+        // Telegramdan ma'lumot olish
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // O'yinni to'liq ekranda ochish
 
-        const scoreEl = document.getElementById('score');
-        const energyEl = document.getElementById('energy-num');
-        const energyFill = document.getElementById('energy-fill');
-        const coin = document.getElementById('coin');
-        const boostPriceEl = document.getElementById('boost-price');
+        const userNameEl = document.getElementById('user-name');
+        
+        // Foydalanuvchi ismini o'rnatish
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userNameEl.innerText = "@" + tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+        } else {
+            userNameEl.innerText = "Foydalanuvchi";
+        }
+
+        let data = {
+            score: parseInt(localStorage.getItem('tap_score')) || 0,
+            energy: parseInt(localStorage.getItem('tap_energy')) || 1000,
+            maxEnergy: parseInt(localStorage.getItem('tap_max')) || 1000,
+            power: parseInt(localStorage.getItem('tap_power')) || 1
+        };
 
         function updateUI() {
-            scoreEl.innerText = score.toLocaleString();
-            energyEl.innerText = `${Math.floor(energy)}/${maxEnergy}`;
-            energyFill.style.width = (energy / maxEnergy * 100) + "%";
-            boostPriceEl.innerText = (tapPower * 150).toLocaleString();
+            document.getElementById('score').innerText = data.score.toLocaleString();
+            document.getElementById('energy-text').innerText = `${Math.floor(data.energy)}/${data.maxEnergy}`;
+            document.getElementById('progress-bar').style.width = (data.energy / data.maxEnergy * 100) + "%";
+            document.getElementById('multitap-cost').innerText = data.power * 200;
+            document.getElementById('energy-cost').innerText = (data.maxEnergy / 100) * 150;
             
-            localStorage.setItem('score', score);
-            localStorage.setItem('energy', energy);
-            localStorage.setItem('tapPower', tapPower);
+            localStorage.setItem('tap_score', data.score);
+            localStorage.setItem('tap_energy', data.energy);
+            localStorage.setItem('tap_max', data.maxEnergy);
+            localStorage.setItem('tap_power', data.power);
         }
 
-        function handleTap(x, y) {
-            if (energy >= tapPower) {
-                score += tapPower;
-                energy -= tapPower;
-                
-                coin.classList.remove('wobble');
-                void coin.offsetWidth;
-                coin.classList.add('wobble');
-
-                createTapText(x, y);
-                updateUI();
-            }
-        }
-
-        coin.addEventListener('click', (e) => handleTap(e.clientX, e.clientY));
+        const coin = document.getElementById('coin');
         coin.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            handleTap(e.touches[0].clientX, e.touches[0].clientY);
+            for(let i=0; i < e.touches.length; i++) {
+                if (data.energy >= data.power) {
+                    data.score += data.power;
+                    data.energy -= data.power;
+                    createFloatingText(e.touches[i].clientX, e.touches[i].clientY);
+                }
+            }
+            coin.style.transform = 'scale(0.95)';
+            setTimeout(() => coin.style.transform = 'scale(1)', 50);
+            updateUI();
         });
 
-        function createTapText(x, y) {
-            const txt = document.createElement('div');
-            txt.className = 'tap-text';
-            txt.innerText = `+${tapPower}`;
-            txt.style.left = (x - 20) + 'px';
-            txt.style.top = (y - 50) + 'px';
-            document.body.appendChild(txt);
-            setTimeout(() => txt.remove(), 800);
+        function createFloatingText(x, y) {
+            const el = document.createElement('div');
+            el.className = 'tap-num';
+            el.innerText = `+${data.power}`;
+            el.style.left = `${x - 20}px`;
+            el.style.top = `${y - 40}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 700);
         }
 
         function upgradeTap() {
-            let price = tapPower * 150;
-            if (score >= price) {
-                score -= price;
-                tapPower++;
-                updateUI();
-            } else { alert("Mablag' yetarli emas!"); }
+            let cost = data.power * 200;
+            if(data.score >= cost) { data.score -= cost; data.power++; updateUI(); }
         }
 
-        function claimBonus() {
-            const last = localStorage.getItem('lastBonus');
-            const now = Date.now();
-            if (!last || now - last > 24*60*60*1000) {
-                score += 10000;
-                localStorage.setItem('lastBonus', now);
-                updateUI();
-                alert("10,000 tanga bonus olindi! 🎁");
-            } else { alert("Bonusni har 24 soatda olish mumkin!"); }
+        function upgradeEnergy() {
+            let cost = (data.maxEnergy / 100) * 150;
+            if(data.score >= cost) { data.score -= cost; data.maxEnergy += 500; data.energy = data.maxEnergy; updateUI(); }
         }
-
-        function showFriends() { alert("Do'stlarni taklif qilish tizimi tez kunda ishga tushadi!"); }
 
         setInterval(() => {
-            if (energy < maxEnergy) {
-                energy = Math.min(maxEnergy, energy + 2);
-                updateUI();
-            }
+            if(data.energy < data.maxEnergy) { data.energy = Math.min(data.maxEnergy, data.energy + 1.5); updateUI(); }
         }, 1000);
 
         updateUI();
