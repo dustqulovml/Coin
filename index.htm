@@ -10,9 +10,9 @@
     <style>
         :root { --gold: linear-gradient(180deg, #ffdf00 0%, #d4af37 100%); --bg: #0a0a0a; }
         body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
-        .header { margin-top: 25px; text-align: center; }
+        .header { margin-top: 25px; text-align: center; width: 100%; }
         #score { font-size: 50px; font-weight: 900; margin: 10px 0; background: var(--gold); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .vip-info { background: rgba(255, 223, 0, 0.1); border: 1px solid gold; padding: 5px 15px; border-radius: 15px; font-size: 14px; color: gold; font-weight: bold; margin-bottom: 10px; }
+        .vip-info { background: rgba(255, 223, 0, 0.1); border: 1px solid gold; padding: 5px 15px; border-radius: 15px; font-size: 14px; color: gold; font-weight: bold; display: inline-block; }
         .coin-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
         #coin { width: 240px; height: 240px; transition: transform 0.05s; cursor: pointer; }
         #coin img { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 30px rgba(255, 223, 0, 0.2); }
@@ -54,6 +54,7 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY",
             authDomain: "tapcoin-a6289.firebaseapp.com",
@@ -68,22 +69,48 @@
         const db = firebase.database();
         const userId = tg.initDataUnsafe?.user?.id || "test_user";
 
+        // Boshlang'ich ma'lumotlar (NaN bo'lmasligi uchun)
         let data = { sc: 0, en: 1000, mx: 1000, pw: 1, vip: 1 };
 
-        // Ma'lumotlarni yuklash va Referal (Faqat sizga 10k qo'shish)
+        function updateUI() {
+            // Ma'lumotlar son ekanligini tekshiramiz
+            const score = Number(data.sc) || 0;
+            const energy = Number(data.en) || 0;
+            const maxEnergy = Number(data.mx) || 1000;
+            const power = Number(data.pw) || 1;
+            const vipLvl = Number(data.vip) || 1;
+
+            document.getElementById('score').innerText = Math.floor(score).toLocaleString();
+            document.getElementById('vip-level').innerText = "VIP " + vipLvl;
+            document.getElementById('en-txt').innerText = `${Math.floor(energy)}/${maxEnergy}`;
+            document.getElementById('pwr-txt').innerText = power;
+            document.getElementById('progress-fill').style.width = (energy / maxEnergy * 100) + "%";
+            
+            let next = vipLvl < 10 ? [10000, 50000, 75000, 100000, 150000, 200000, 300000, 400000, 500000][vipLvl-1] : "MAX";
+            document.getElementById('next-vip').innerText = "Keyingi VIP: " + (next === "MAX" ? "MAX" : next.toLocaleString());
+        }
+
+        // Ma'lumotlarni bazadan olish
         db.ref('users/' + userId).on('value', (snap) => {
             if (snap.exists()) {
-                data = snap.val();
+                const cloudData = snap.val();
+                data = {
+                    sc: Number(cloudData.sc) || 0,
+                    en: Number(cloudData.en) || 1000,
+                    mx: Number(cloudData.mx) || 1000,
+                    pw: Number(cloudData.pw) || 1,
+                    vip: Number(cloudData.vip) || 1
+                };
                 checkVIP();
                 updateUI();
             } else {
                 const startParam = tg.initDataUnsafe?.start_param;
                 if (startParam && startParam.startsWith('ref')) {
                     const referrerId = startParam.replace('ref', '');
-                    // Taklif qilganga 10,000 ball qo'shish
-                    db.ref('users/' + referrerId + '/sc').transaction(s => (s || 0) + 10000);
+                    db.ref('users/' + referrerId + '/sc').transaction(s => (Number(s) || 0) + 10000);
                 }
                 db.ref('users/' + userId).set(data);
+                updateUI();
             }
         });
 
@@ -92,8 +119,8 @@
                 { L: 10, s: 500000, b: 200000 }, { L: 9, s: 400000, b: 150000 },
                 { L: 8, s: 300000, b: 100000 },  { L: 7, s: 200000, b: 80000 },
                 { L: 6, s: 150000, b: 60000 },   { L: 5, s: 100000, b: 50000 },
-                { L: 4, s: 75000, b: 40000 },    { L: 3, s: 50000, b: 40000 }, // Siz aytgan: 50k bo'lsa VIP 3 va +40k bonus
-                { L: 2, s: 10000, b: 20000 }     // Siz aytgan: 10k bo'lsa VIP 2 va +20k bonus
+                { L: 4, s: 75000, b: 40000 },    { L: 3, s: 50000, b: 40000 },
+                { L: 2, s: 10000, b: 20000 }
             ];
 
             for (let lvl of levels) {
@@ -105,18 +132,6 @@
                     break;
                 }
             }
-        }
-
-        function updateUI() {
-            document.getElementById('score').innerText = Math.floor(data.sc).toLocaleString();
-            document.getElementById('vip-level').innerText = "VIP " + data.vip;
-            document.getElementById('en-txt').innerText = `${Math.floor(data.en)}/${data.mx}`;
-            document.getElementById('pwr-txt').innerText = data.pw;
-            document.getElementById('progress-fill').style.width = (data.en / data.mx * 100) + "%";
-            
-            // Keyingi VIP haqida ma'lumot
-            let next = data.vip < 10 ? [10000, 50000, 75000, 100000, 150000, 200000, 300000, 400000, 500000][data.vip-1] : "MAX";
-            document.getElementById('next-vip').innerText = "Keyingi VIP: " + (next === "MAX" ? "MAX" : next.toLocaleString());
         }
 
         document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
@@ -150,7 +165,7 @@
 
         function sendInvite() {
             const url = `https://t.me/Tapcoinsumbot/start?startapp=ref${userId}`;
-            const text = "Men bilan o'yna va VIP darajaga ko'taril! 🚀";
+            const text = "Do'stim, men bilan o'yna va VIP darajaga ko'taril! 🚀";
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`);
         }
 
