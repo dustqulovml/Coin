@@ -6,94 +6,235 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <title>Notcoin VIP Ultimate</title>
     <style>
-        :root { --gold: #f3ba2f; --bg: #000000; --panel: #1a1c20; }
-        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        :root { --gold: #f3ba2f; --bg: #000000; --panel: #1a1c20; --bronze: #cd7f32; --silver: #c0c0c0; --platinum: #e5e4e2; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        
+        /* Header & VIP Rank */
         .header { margin-top: 30px; text-align: center; }
-        #vip-rank { color: var(--gold); font-weight: bold; font-size: 14px; text-transform: uppercase; }
-        #score { font-size: 60px; font-weight: 800; margin: 5px 0; }
+        #vip-rank { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; transition: 0.3s; }
+        #score { font-size: 58px; font-weight: 800; margin: 0; text-shadow: 0 0 15px rgba(255,255,255,0.1); }
+
+        /* Tanga dizayni */
         .coin-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
-        #coin { width: 260px; height: 260px; background: radial-gradient(circle, #f3ba2f 0%, #b38600 100%); border-radius: 50%; border: 8px solid #222; box-shadow: 0 0 50px rgba(243, 186, 47, 0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.05s; cursor: pointer; }
-        #coin::after { content: "🪙"; font-size: 100px; }
-        .footer { width: 90%; padding-bottom: 30px; }
-        .energy-bar { width: 100%; height: 12px; background: #222; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        #energy-fill { height: 100%; width: 100%; background: var(--gold); transition: 0.2s; }
-        .menu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .btn { background: var(--panel); border-radius: 12px; padding: 12px 5px; text-align: center; border: 1px solid #333; font-size: 11px; cursor: pointer; }
-        .modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 75%; background: #111; border-top: 3px solid var(--gold); border-radius: 30px 30px 0 0; z-index: 1000; transition: 0.4s; padding: 25px; box-sizing: border-box; }
+        #coin { 
+            width: 270px; height: 270px; 
+            background: radial-gradient(circle at 35% 35%, #f3ba2f 0%, #b38600 100%);
+            border-radius: 50%; border: 10px solid #222;
+            box-shadow: 0 0 50px rgba(243, 186, 47, 0.3), inset 0 0 20px rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.05s; cursor: pointer; position: relative;
+        }
+        #coin::before { content: "🪙"; font-size: 110px; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
+
+        /* Footer & Stats */
+        .footer { width: 92%; max-width: 420px; padding-bottom: 30px; }
+        .energy-info { font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+        .energy-bar { width: 100%; height: 12px; background: #222; border-radius: 10px; overflow: hidden; border: 1px solid #333; }
+        #energy-fill { height: 100%; width: 100%; background: var(--gold); transition: width 0.2s; box-shadow: 0 0 10px var(--gold); }
+
+        /* Menyu tugmalari */
+        .menu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; }
+        .btn { background: var(--panel); border-radius: 15px; padding: 12px 5px; text-align: center; border: 1px solid #333; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.9); background: #252830; }
+        .btn i { display: block; font-size: 18px; margin-bottom: 4px; font-style: normal; }
+
+        /* Modallar */
+        .modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 80%; background: #111; border-top: 3px solid var(--gold); border-radius: 30px 30px 0 0; z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 25px; box-sizing: border-box; overflow-y: auto; }
         .modal.active { bottom: 0; }
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; z-index: 999; }
-        .tap-num { position: absolute; color: white; font-size: 40px; font-weight: 900; animation: float 0.7s forwards; pointer-events: none; }
-        @keyframes float { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-120px); } }
+        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display:none; z-index: 999; }
+        
+        .list-item { background: #1a1c20; padding: 15px; border-radius: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        .claim-btn { background: var(--gold); color: black; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 12px; border: none; }
+        
+        /* Animatsiya */
+        .tap-num { position: absolute; color: white; font-size: 45px; font-weight: 900; animation: float 0.7s forwards; pointer-events: none; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        @keyframes float { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-130px) scale(1.2); } }
     </style>
 </head>
 <body>
-    <div class="header"><div id="vip-rank">BRONZE</div><div id="score">0</div></div>
-    <div class="coin-area"><div id="coin"></div></div>
+
+    <div class="header">
+        <div id="vip-rank">BRONZE MEMBER</div>
+        <div id="score">0</div>
+    </div>
+
+    <div class="coin-area">
+        <div id="coin"></div>
+    </div>
+
     <div class="footer">
-        <div>⚡ <span id="en-txt">1000</span>/1000</div>
+        <div class="energy-info">⚡ <span id="en-txt">1000</span>/1000</div>
         <div class="energy-bar"><div id="energy-fill"></div></div>
+        
         <div class="menu">
-            <div class="btn" onclick="openMod('tasks-modal')">📝Tasks</div>
-            <div class="btn" onclick="daily()">🎁Daily</div>
-            <div class="btn" onclick="boost()">🚀Boost</div>
-            <div class="btn" onclick="openMod('ref-modal')">👥Refs</div>
+            <div class="btn" onclick="openModal('tasks-modal')"><i>📝</i>Tasks</div>
+            <div class="btn" onclick="claimDaily()"><i>🎁</i>Daily</div>
+            <div class="btn" onclick="upgrade()"><i>🚀</i>Boost</div>
+            <div class="btn" onclick="openModal('ref-modal')" style="border-color: var(--gold)"><i>👥</i>Refs</div>
         </div>
     </div>
-    <div class="overlay" id="overlay" onclick="closeMod()"></div>
-    <div id="tasks-modal" class="modal"><h2>Vazifalar</h2><button class="btn" style="width:100%;" onclick="doTask(50000)">Kanalga a'zo bo'lish (+50k)</button></div>
-    <div id="ref-modal" class="modal"><h2>Do'stlar</h2><p>Takliflar: <span id="ref-count">0</span></p><button class="btn" style="width:100%; background:var(--gold); color:black;" onclick="invite()">LINKNI YUBORISH</button></div>
+
+    <div class="overlay" id="overlay" onclick="closeModals()"></div>
+
+    <div id="tasks-modal" class="modal">
+        <h2 style="color:var(--gold); margin-top:0;">Vazifalar</h2>
+        <div class="list-item">
+            <div><b>Telegram Kanal</b><br><small style="color:var(--gold)">+100,000 NOT</small></div>
+            <button class="claim-btn" onclick="doTask('tg', 100000)">Bajarish</button>
+        </div>
+        <div class="list-item">
+            <div><b>YouTube Obuna</b><br><small style="color:var(--gold)">+50,000 NOT</small></div>
+            <button class="claim-btn" onclick="doTask('yt', 50000)">Bajarish</button>
+        </div>
+    </div>
+
+    <div id="ref-modal" class="modal">
+        <h2 style="color:var(--gold); margin-top:0;">Do'stlar</h2>
+        <div style="background:#1a1c20; padding:25px; border-radius:25px; text-align:center; margin-bottom:20px; border:1px solid #333;">
+            <div style="font-size:14px; color:#888; margin-bottom:5px;">Siz taklif qilganlar</div>
+            <div style="font-size:48px; font-weight:900;" id="ref-count">0</div>
+        </div>
+        <p style="color:#777; font-size:13px; text-align:center;">Har bir do'stingiz uchun 50,000 NOT oling!</p>
+        <button class="btn" style="width:100%; background:var(--gold); color:black; padding:20px; font-size:16px; border:none; margin-top:10px;" onclick="sendInvite()">TAKLIY YUBORISH</button>
+    </div>
 
     <script>
-        const tg = window.Telegram.WebApp; tg.expand();
-        const firebaseConfig = { apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY", authDomain: "tapcoin-a6289.firebaseapp.com", databaseURL: "https://tapcoin-a6289-default-rtdb.firebaseio.com", projectId: "tapcoin-a6289", storageBucket: "tapcoin-a6289.firebasestorage.app", messagingSenderId: "151358729111", appId: "1:151358729111:web:282269198f05cf9b89b2d2" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
-        const userId = tg.initDataUnsafe?.user?.id || "test_user";
-        let user = { sc: 0, en: 1000, mx: 1000, pw: 1, refs: 0, last: 0 };
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhCoj7uJply9mLRN9unsalONxV1CbZ2iY",
+            authDomain: "tapcoin-a6289.firebaseapp.com",
+            databaseURL: "https://tapcoin-a6289-default-rtdb.firebaseio.com",
+            projectId: "tapcoin-a6289",
+            storageBucket: "tapcoin-a6289.firebasestorage.app",
+            messagingSenderId: "151358729111",
+            appId: "1:151358729111:web:282269198f05cf9b89b2d2"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const userId = tg.initDataUnsafe?.user?.id || "dev_" + Math.floor(Math.random()*1000);
+
+        let user = { sc: 0, en: 1000, mx: 1000, pw: 1, refs: 0, lastClaim: 0 };
+        let isLoaded = false;
+
         const uRef = db.ref('users/' + userId);
 
         uRef.on('value', (snap) => {
-            if (snap.exists()) { user = snap.val(); updateUI(); } 
-            else {
-                const p = new URLSearchParams(window.location.search);
-                const r = p.get('tgWebAppStartParam');
-                if (r && r.startsWith('ref')) {
-                    const oId = r.replace('ref', '');
-                    db.ref('users/'+oId).transaction(u => { if(u){u.sc+=50000; u.refs=(u.refs||0)+1;} return u; });
-                    user.sc = 25000;
+            if (snap.exists()) {
+                user = snap.val();
+                isLoaded = true;
+                updateUI();
+            } else {
+                // Referal Bonus Tizimi
+                const params = new URLSearchParams(window.location.search);
+                const start = params.get('tgWebAppStartParam') || tg.initDataUnsafe?.start_param;
+                
+                if (start && start.startsWith('ref')) {
+                    const rId = start.replace('ref', '');
+                    user.sc = 25000; // Yangi odamga bonus
+                    if (rId !== userId.toString()) {
+                        db.ref('users/' + rId).transaction(u => {
+                            if(u) { u.sc += 50000; u.refs = (u.refs || 0) + 1; }
+                            return u;
+                        });
+                    }
                 }
                 uRef.set(user);
             }
         });
 
         function updateUI() {
+            if(!isLoaded) return;
             document.getElementById('score').innerText = Math.floor(user.sc).toLocaleString();
             document.getElementById('en-txt').innerText = Math.floor(user.en);
             document.getElementById('ref-count').innerText = user.refs || 0;
-            document.getElementById('energy-fill').style.width = (user.en/user.mx*100) + "%";
-            let r = "BRONZE"; if(user.sc>1000000) r="💎 DIAMOND"; else if(user.sc>100000) r="🥇 GOLD";
-            document.getElementById('vip-rank').innerText = r;
+            document.getElementById('energy-fill').style.width = (user.en / user.mx * 100) + "%";
+            
+            // VIP Ismlar va Ranglar
+            let rank = "BRONZE MEMBER"; let color = "var(--bronze)";
+            if (user.sc >= 1000000) { rank = "💎 DIAMOND KING"; color = "#00ffff"; }
+            else if (user.sc >= 500000) { rank = "🏆 PLATINUM STAR"; color = "var(--platinum)"; }
+            else if (user.sc >= 100000) { rank = "🥇 GOLD MEMBER"; color = "var(--gold)"; }
+            else if (user.sc >= 50000) { rank = "🥈 SILVER MEMBER"; color = "var(--silver)"; }
+            
+            const rEl = document.getElementById('vip-rank');
+            rEl.innerText = rank; rEl.style.color = color;
         }
 
-        document.getElementById('coin').onclick = (e) => {
-            if(user.en >= user.pw) {
-                user.sc += user.pw; user.en -= user.pw; updateUI(); uRef.update({sc:user.sc, en:user.en});
-                const d = document.createElement('div'); d.className='tap-num'; d.innerText=`+${user.pw}`;
-                d.style.left=e.pageX+'px'; d.style.top=e.pageY+'px'; document.body.appendChild(d);
-                setTimeout(()=>d.remove(), 600);
+        document.getElementById('coin').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const ts = e.changedTouches;
+            for(let i=0; i<ts.length; i++) {
+                if(user.en >= user.pw) {
+                    user.sc += user.pw; user.en -= user.pw;
+                    pop(ts[i].pageX, ts[i].pageY);
+                }
             }
-        };
+            updateUI();
+            uRef.update({ sc: user.sc, en: user.en });
+            document.getElementById('coin').style.transform = "scale(0.93)";
+            setTimeout(() => document.getElementById('coin').style.transform = "scale(1)", 60);
+        });
 
-        function daily() {
-            if(Date.now()-(user.last||0)>86400000){ user.sc+=10000; user.last=Date.now(); uRef.update(user); tg.showAlert("Bonus olindi!"); }
-            else tg.showAlert("Ertaga kuting!");
+        function pop(x, y) {
+            const d = document.createElement('div');
+            d.className = 'tap-num'; d.innerText = `+${user.pw}`;
+            d.style.left = x + 'px'; d.style.top = y + 'px';
+            document.body.appendChild(d);
+            setTimeout(() => d.remove(), 700);
         }
-        function boost() { if(user.sc>=5000){user.sc-=5000; user.pw++; uRef.update(user);} }
-        function doTask(a) { user.sc+=a; uRef.update({sc:user.sc}); tg.showAlert("Bajarildi!"); }
-        function invite() { tg.openTelegramLink(`https://t.me/share/url?url=https://t.me/SizningBot?start=ref${userId}&text=Bonus ol!`); }
-        function openMod(id) { document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
-        function closeMod() { document.querySelectorAll('.modal').forEach(m=>m.classList.remove('active')); document.getElementById('overlay').style.display='none'; }
-        setInterval(() => { if(user.en<user.mx){user.en=Math.min(user.mx, user.en+3); updateUI(); uRef.update({en:user.en});} }, 1500);
+
+        function claimDaily() {
+            const now = Date.now();
+            if (now - (user.lastClaim || 0) > 86400000) {
+                user.sc += 15000;
+                user.lastClaim = now;
+                uRef.update({ sc: user.sc, lastClaim: now });
+                tg.showAlert("Tabriklaymiz! 🎁 15,000 NOT kunlik bonus olindi!");
+            } else {
+                tg.showAlert("Kunlik bonusni ertaga olishingiz mumkin!");
+            }
+        }
+
+        function doTask(t, amt) {
+            user.sc += amt;
+            uRef.update({ sc: user.sc });
+            tg.showAlert("Vazifa bajarildi! ✅ +" + amt.toLocaleString() + " NOT");
+        }
+
+        function upgrade() {
+            let cost = user.pw * 5000;
+            if (user.sc >= cost) {
+                user.sc -= cost; user.pw++;
+                uRef.update({ sc: user.sc, pw: user.pw });
+            } else tg.showAlert("Boost uchun ball yetarli emas!");
+        }
+
+        function openModal(id) { 
+            document.getElementById(id).classList.add('active'); 
+            document.getElementById('overlay').style.display = 'block'; 
+        }
+        function closeModals() { 
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active')); 
+            document.getElementById('overlay').style.display = 'none'; 
+        }
+        function sendInvite() {
+            const link = `https://t.me/Tapcoinsumbot/app?startapp=ref${userId}`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=🚀 Notcoin VIPda menga qo'shil va 25,000 NOT bonus ol!`);
+        }
+
+        setInterval(() => {
+            if(isLoaded && user.en < user.mx) { 
+                user.en = Math.min(user.mx, user.en + 5); 
+                updateUI(); 
+                uRef.update({ en: user.en }); 
+            }
+        }, 1500);
     </script>
 </body>
 </html>
+.
