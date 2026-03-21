@@ -6,57 +6,86 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <title>Tap Coin VIP Pro</title>
+    <title>Notcoin Gold VIP</title>
     <style>
-        :root { --gold: #ffbf00; --bg: #0a0a0a; --card: #151515; }
-        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
-        .header { margin-top: 25px; text-align: center; width: 100%; }
-        #vip-level { background: rgba(255,191,0,0.15); border: 1px solid var(--gold); padding: 5px 15px; border-radius: 20px; font-size: 14px; color: var(--gold); font-weight: bold; }
-        #score { font-size: 50px; font-weight: 800; margin: 10px 0; }
-        .coin-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
-        #coin { width: 240px; height: 240px; background: radial-gradient(circle, #ffe066 0%, #ffbf00 50%, #b38600 100%); border-radius: 50%; border: 8px solid #cc9900; box-shadow: 0 0 30px rgba(255,191,0,0.2); display: flex; align-items: center; justify-content: center; transition: transform 0.05s; }
-        #coin::after { content: '₿'; font-size: 120px; color: #b38600; font-weight: 900; }
-        .footer { width: 90%; max-width: 400px; padding-bottom: 30px; }
-        .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #aaa; }
-        .progress-bar { width: 100%; height: 10px; background: #222; border-radius: 5px; overflow: hidden; margin-bottom: 15px; }
-        #progress-fill { height: 100%; width: 0%; background: var(--gold); transition: 0.2s; }
-        .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn { background: var(--card); border: 1px solid #333; color: white; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: bold; text-align: center; }
-        #ref-modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 75%; background: #111; border-top: 3px solid var(--gold); border-radius: 25px 25px 0 0; z-index: 1000; transition: 0.4s; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+        :root { --gold: #f3ba2f; --bg: #000000; --panel: #1c1f24; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; touch-action: none; }
+        
+        /* Oltin Score Animatsiyasi */
+        .score-container { margin-top: 40px; text-align: center; z-index: 10; }
+        #score { font-size: 48px; font-weight: 800; display: flex; align-items: center; gap: 10px; color: white; }
+        #score img { width: 40px; height: 40px; }
+        #vip-badge { font-size: 14px; color: var(--gold); border: 1px solid var(--gold); padding: 2px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Asosiy Tanga */
+        .game-area { flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
+        .coin-wrapper { position: relative; cursor: pointer; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #coin { width: 260px; height: 260px; border-radius: 50%; background: url('https://notcoin.org/favicon.ico') center/cover; box-shadow: 0 0 50px rgba(243, 186, 47, 0.2); border: 10px solid #282a2e; }
+        
+        /* Energiya va Progress */
+        .footer-ui { width: 90%; max-width: 400px; padding-bottom: 40px; }
+        .energy-bar-wrap { width: 100%; height: 14px; background: #282a2e; border-radius: 10px; margin: 15px 0; overflow: hidden; position: relative; border: 1px solid #333; }
+        #energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #f3ba2f, #fce095); transition: width 0.3s; }
+        .stats-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
+
+        /* Pastki Menyu */
+        .nav-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .nav-item { background: var(--panel); border: 1px solid #333; border-radius: 16px; padding: 15px; text-align: center; font-weight: 600; font-size: 14px; color: #fff; text-decoration: none; }
+        .nav-item i { display: block; font-size: 20px; margin-bottom: 5px; }
+
+        /* Referal Modal */
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; z-index: 100; }
+        #ref-modal { position: fixed; bottom: -100%; left: 0; width: 100%; height: 85%; background: #17181c; border-top: 4px solid var(--gold); border-radius: 30px 30px 0 0; z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px; box-sizing: border-box; }
         #ref-modal.active { bottom: 0; }
-        .bonus-item { display: flex; justify-content: space-between; background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 10px; font-size: 14px; border-left: 4px solid #333; }
-        .bonus-item.done { border-left-color: #4caf50; color: #4caf50; }
-        .overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; z-index: 999; }
-        .tap-num { position: absolute; color: white; font-size: 32px; font-weight: 800; animation: float 0.7s forwards; pointer-events: none; }
-        @keyframes float { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
+        .ref-card { background: #25282e; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 25px; border: 1px solid #333; }
+        .bonus-item { display: flex; justify-content: space-between; background: #1f2126; padding: 15px; margin-bottom: 10px; border-radius: 12px; border-left: 5px solid #444; }
+        .bonus-item.achieved { border-left-color: #4caf50; color: #4caf50; }
+
+        /* Tapping Effect */
+        .tap-effect { position: absolute; color: white; font-size: 38px; font-weight: 900; animation: moveUp 0.8s ease-out forwards; pointer-events: none; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        @keyframes moveUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-150px) scale(1.5); } }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div id="vip-level">Yuklanmoqda...</div>
+
+    <div class="score-container">
+        <div id="vip-badge">Bronze League</div>
         <div id="score">0</div>
     </div>
-    <div class="coin-area" id="tap-zone"><div id="coin"></div></div>
-    <div class="footer">
-        <div class="info-row"><span>⚡ <span id="en-txt">0/0</span></span><span>👆 +<span id="pwr-txt">0</span></span></div>
-        <div class="progress-bar"><div id="progress-fill"></div></div>
-        <div class="menu">
-            <div class="btn" onclick="upgrade()">🚀 Boost</div>
-            <div class="btn" style="color: var(--gold);" onclick="toggleModal(true)">👥 Do'stlar</div>
+
+    <div class="game-area">
+        <div class="coin-wrapper" id="coin-trigger">
+            <div id="coin"></div>
         </div>
     </div>
-    <div class="overlay" id="overlay" onclick="toggleModal(false)"></div>
+
+    <div class="footer-ui">
+        <div class="stats-row">
+            <span>⚡ <span id="en-val">1000</span>/1000</span>
+            <span style="color:var(--gold)">Level 1</span>
+        </div>
+        <div class="energy-bar-wrap">
+            <div id="energy-fill"></div>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item" onclick="upgrade()">🚀 Boost</div>
+            <div class="nav-item" style="border-color: var(--gold)" onclick="openRef()">👥 Friends</div>
+        </div>
+    </div>
+
+    <div id="modal-overlay" onclick="closeRef()"></div>
     <div id="ref-modal">
-        <h2 style="color:var(--gold);">Referal Bonuslar</h2>
-        <div style="background:var(--card); padding:15px; border-radius:15px; text-align:center; margin-bottom:15px; border:1px solid #222;">
-            <div style="color:#888;">Takliflar: <span id="ref-count" style="color:white; font-weight:bold;">0</span> ta</div>
+        <h2 style="margin-top:0">Invite Friends</h2>
+        <div class="ref-card">
+            <div style="font-size:14px; color:#aaa">Total Referrals</div>
+            <div style="font-size:36px; font-weight:800; color:var(--gold)" id="ref-count">0</div>
         </div>
         <div class="bonus-list">
-            <div class="bonus-item" id="b1"><span>5 do'st</span> <span>+25,000 ₿</span></div>
-            <div class="bonus-item" id="b2"><span>10 do'st</span> <span>+50,000 ₿</span></div>
-            <div class="bonus-item" id="b3"><span>50 do'st</span> <span>+250,000 ₿</span></div>
+            <div class="bonus-item" id="r5"><span>5 Friends</span> <b>+50,000</b></div>
+            <div class="bonus-item" id="r10"><span>10 Friends</span> <b>+150,000</b></div>
+            <div class="bonus-item" id="r50"><span>50 Friends</span> <b>+1,000,000</b></div>
         </div>
-        <button class="btn" style="width:100%; margin-top:20px; background:var(--gold); color:black;" onclick="sendInvite()">Do'stni taklif qilish</button>
+        <button onclick="shareLink()" style="width:100%; background:var(--gold); border:none; padding:18px; border-radius:15px; font-weight:800; font-size:16px; margin-top:30px">Send Invite Link</button>
     </div>
 
     <script>
@@ -77,107 +106,126 @@
         const db = firebase.database();
         const userId = tg.initDataUnsafe?.user?.id || "test_user";
 
-        let data = { sc: 0, en: 1000, mx: 1000, pw: 1, vip: 1, refs: 0 };
-        let loaded = false;
+        let user = { sc: 0, en: 1000, mx: 1000, pw: 1, refs: 0, lvl: 1 };
+        let isLoaded = false;
 
-        // Referal va Ma'lumotlarni yuklash funksiyasi
-        function initApp() {
-            const userRef = db.ref('users/' + userId);
-            
-            userRef.once('value', (snap) => {
-                if (snap.exists()) {
-                    data = snap.val();
-                    loaded = true;
-                    updateUI();
-                } else {
-                    // Yangi foydalanuvchi - Referalni tekshirish
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const startParam = urlParams.get('tgWebAppStartParam') || tg.initDataUnsafe?.start_param;
-                    
-                    if (startParam && startParam.startsWith('ref')) {
-                        const rId = startParam.replace('ref', '');
-                        if(rId !== userId.toString()) {
-                            db.ref('users/' + rId).transaction((u) => {
-                                if (u) {
-                                    u.sc = (Number(u.sc) || 0) + 10000;
-                                    u.refs = (Number(u.refs) || 0) + 1;
-                                    // Bonuslar
-                                    if(u.refs === 5) u.sc += 25000;
-                                    if(u.refs === 10) u.sc += 50000;
-                                }
-                                return u;
-                            });
-                        }
-                    }
-                    userRef.set(data).then(() => { loaded = true; updateUI(); });
-                }
-            });
+        // Ma'lumotlarni 'users' papkasidan yuklash
+        const docRef = db.ref('users/' + userId);
 
-            // Real vaqtda yangilanish
-            userRef.on('value', (s) => { if(s.exists()) { data = s.val(); updateUI(); } });
-        }
-
-        function updateUI() {
-            if(!loaded) return;
-            document.getElementById('score').innerText = Math.floor(data.sc).toLocaleString();
-            document.getElementById('vip-level').innerText = "VIP " + (data.vip || 1);
-            document.getElementById('en-txt').innerText = Math.floor(data.en) + "/" + data.mx;
-            document.getElementById('pwr-txt').innerText = data.pw;
-            document.getElementById('ref-count').innerText = data.refs || 0;
-            document.getElementById('progress-fill').style.width = (data.en / data.mx * 100) + "%";
-            
-            if(data.refs >= 5) document.getElementById('b1').classList.add('done');
-            if(data.refs >= 10) document.getElementById('b2').classList.add('done');
-            if(data.refs >= 50) document.getElementById('b3').classList.add('done');
-        }
-
-        document.getElementById('coin').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (loaded && data.en >= data.pw) {
-                data.sc += data.pw; data.en -= data.pw;
-                updateUI();
-                db.ref('users/' + userId).update({ sc: data.sc, en: data.en });
-                showPop(e.touches[0].clientX, e.touches[0].clientY);
+        docRef.on('value', (snap) => {
+            if (snap.exists()) {
+                user = snap.val();
+                isLoaded = true;
+                updateView();
+            } else {
+                handleNewUser();
             }
-            document.getElementById('coin').style.transform = "scale(0.95)";
-            setTimeout(() => document.getElementById('coin').style.transform = "scale(1)", 50);
         });
 
-        function showPop(x, y) {
-            const d = document.createElement('div');
-            d.className = 'tap-num'; d.innerText = `+${data.pw}`;
-            d.style.left = x + 'px'; d.style.top = y + 'px';
-            document.body.appendChild(d);
-            setTimeout(() => d.remove(), 700);
+        function handleNewUser() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refId = urlParams.get('tgWebAppStartParam')?.replace('ref', '') || tg.initDataUnsafe?.start_param?.replace('ref', '');
+
+            if (refId && refId !== userId.toString()) {
+                db.ref('users/' + refId).transaction((u) => {
+                    if (u) {
+                        u.sc = (u.sc || 0) + 25000; // Do'st uchun bonus
+                        u.refs = (u.refs || 0) + 1;
+                        // Pog'onali bonuslar
+                        if(u.refs === 5) u.sc += 50000;
+                        if(u.refs === 10) u.sc += 150000;
+                        if(u.refs === 50) u.sc += 1000000;
+                    }
+                    return u;
+                });
+            }
+            docRef.set(user);
+        }
+
+        function updateView() {
+            if(!isLoaded) return;
+            document.getElementById('score').innerText = Math.floor(user.sc).toLocaleString();
+            document.getElementById('en-val').innerText = Math.floor(user.en);
+            document.getElementById('energy-fill').style.width = (user.en / user.mx * 100) + "%";
+            document.getElementById('ref-count').innerText = user.refs || 0;
+            
+            // Liga yangilash
+            const badge = document.getElementById('vip-badge');
+            if(user.sc > 1000000) badge.innerText = "Gold League";
+            else if(user.sc > 100000) badge.innerText = "Silver League";
+
+            // Referal status
+            if(user.refs >= 5) document.getElementById('r5').classList.add('achieved');
+            if(user.refs >= 10) document.getElementById('r10').classList.add('achieved');
+        }
+
+        // Tapping Logikasi (Multi-touch qo'llab-quvvatlaydi)
+        document.getElementById('coin-trigger').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touches = e.changedTouches;
+            
+            for (let i = 0; i < touches.length; i++) {
+                if (user.en >= user.pw) {
+                    user.sc += user.pw;
+                    user.en -= user.pw;
+                    createTapEffect(touches[i].pageX, touches[i].pageY);
+                }
+            }
+            updateView();
+            docRef.update({ sc: user.sc, en: user.en });
+            
+            // Vizual qisqarish
+            document.getElementById('coin').style.transform = "scale(0.92) translateY(5px)";
+            setTimeout(() => {
+                document.getElementById('coin').style.transform = "scale(1) translateY(0)";
+            }, 70);
+        });
+
+        function createTapEffect(x, y) {
+            const el = document.createElement('div');
+            el.className = 'tap-effect';
+            el.innerText = `+${user.pw}`;
+            el.style.left = `${x - 20}px`;
+            el.style.top = `${y - 50}px`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function openRef() {
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('ref-modal').classList.add('active');
+        }
+
+        function closeRef() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('ref-modal').classList.remove('active');
+        }
+
+        function shareLink() {
+            const link = `https://t.me/Tapcoinsumbot/app?startapp=ref${userId}`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=₿+Notcoin+Goldda+ballarni+yig'amiz!+25k+sovg'a!`);
         }
 
         function upgrade() {
-            let cost = data.pw * 1000;
-            if (data.sc >= cost) {
-                data.sc -= cost; data.pw++;
-                db.ref('users/' + userId).update({ sc: data.sc, pw: data.pw });
-            } else tg.showAlert("Ball yetarli emas!");
-        }
-
-        function sendInvite() {
-            const bot = "Tapcoinsumbot";
-            const url = `https://t.me/${bot}/start?startapp=ref${userId}`;
-            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=₿+Men+bilan+birga+ball+yig'ing!`);
-        }
-
-        function toggleModal(s) {
-            document.getElementById('ref-modal').classList.toggle('active', s);
-            document.getElementById('overlay').style.display = s ? 'block' : 'none';
-        }
-
-        setInterval(() => {
-            if (loaded && data.en < data.mx) { 
-                data.en = Math.min(data.mx, data.en + 3); updateUI();
-                db.ref('users/' + userId).update({ en: data.en });
+            const cost = user.pw * 2000;
+            if(user.sc >= cost) {
+                user.sc -= cost;
+                user.pw++;
+                docRef.update({ sc: user.sc, pw: user.pw });
+                tg.showAlert(`Level Up! Endi har bir tap: +${user.pw}`);
+            } else {
+                tg.showAlert(`Mablag' kam! Keyingi daraja uchun: ${cost.toLocaleString()} NOT kerak.`);
             }
-        }, 2000);
+        }
 
-        initApp();
+        // Energiya regeneratsiyasi (Avtomatik to'lish)
+        setInterval(() => {
+            if (isLoaded && user.en < user.mx) {
+                user.en = Math.min(user.mx, user.en + 2);
+                updateView();
+                docRef.update({ en: user.en });
+            }
+        }, 1500);
     </script>
 </body>
 </html>
